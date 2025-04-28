@@ -3,7 +3,6 @@
 import { ReactNode, useState } from "react";
 import { ThemeProvider, CssBaseline, Switch, FormControlLabel, Icon } from "@mui/material";
 import { getTheme } from "@/theme/theme";
-import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 
 type ThemeRegistryProps = {
@@ -37,7 +36,7 @@ export default function ThemeRegistry({ children }: ThemeRegistryProps) {
               checked={mode === 'dark'}
               onChange={toggleTheme}
               color="primary"
-              icon={<Brightness7Icon />}
+              icon={<Brightness4Icon />}
               checkedIcon={<Brightness4Icon />}
             />
           }

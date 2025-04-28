@@ -6,12 +6,12 @@ import { LoanTable } from './LoanTable';
 import { PaymentRow } from './types';
 import { Card, CardContent, Container, Typography } from '@mui/material';
 
-
 export function LoanCalculator() {
   const [loanAmount, setLoanAmount] = useState<string>('');
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [monthsLeft, setMonthsLeft] = useState<string>('');
   const [interestRate, setInterestRate] = useState<string>('');
+  const [interestRateType, setInterestRateType] = useState<'monthly' | 'annual'>('monthly'); // Estado para tipo de taxa de juros
   const [errors, setErrors] = useState({
     loanAmount: null,
     monthlyPayment: null,
@@ -22,13 +22,19 @@ export function LoanCalculator() {
   const [paymentSchedule, setPaymentSchedule] = useState<PaymentRow[]>([]);
   const [totalPaid, setTotalPaid] = useState<number>(0);
   const [totalInterestPaid, setTotalInterestPaid] = useState<number>(0);
+  const [totalPaidYearly, setTotalPaidYearly] = useState<number>(0); // Novo estado para total pago por ano
+
+  // Função para limpar e converter os valores para número
+  const cleanAndConvert = (value: string) => {
+    return parseFloat(value.replace(/[^\d.-]/g, '')); // Remove qualquer caractere que não seja número ou ponto
+  };
 
   const validateForm = () => {
     const newErrors: any = {};
-    const loanAmountValue = parseFloat(loanAmount);
-    const monthlyPaymentValue = parseFloat(monthlyPayment);
+    const loanAmountValue = cleanAndConvert(loanAmount);
+    const monthlyPaymentValue = cleanAndConvert(monthlyPayment);
     const monthsLeftValue = parseInt(monthsLeft, 10);
-    const interestRateValue = parseFloat(interestRate);
+    const interestRateValue = cleanAndConvert(interestRate);
 
     if (isNaN(loanAmountValue) || loanAmountValue <= 0) {
       newErrors.loanAmount = 'Valor do empréstimo inválido';
@@ -65,10 +71,15 @@ export function LoanCalculator() {
     }
 
     setTimeout(() => {
-      const loanAmountValue = parseFloat(loanAmount);
-      const monthlyPaymentValue = parseFloat(monthlyPayment);
+      const loanAmountValue = cleanAndConvert(loanAmount);
+      const monthlyPaymentValue = cleanAndConvert(monthlyPayment);
       const monthsLeftValue = parseInt(monthsLeft, 10);
-      const monthlyInterestRate = parseFloat(interestRate) / 100;
+      let monthlyInterestRate = cleanAndConvert(interestRate) / 100;
+
+      // Se a taxa de juros for anual, converte para mensal
+      if (interestRateType === 'annual') {
+        monthlyInterestRate = monthlyInterestRate / 12;
+      }
 
       const schedule: PaymentRow[] = [];
       let balance = loanAmountValue;
@@ -76,6 +87,7 @@ export function LoanCalculator() {
       let totalPaidValue = 0;
       let totalInterestValue = 0;
 
+      // Calcular a tabela de pagamento e o total pago
       for (let month = 1; month <= monthsLeftValue; month++) {
         const interest = balance * monthlyInterestRate;
         const initialBalance = balance + interest;
@@ -110,7 +122,17 @@ export function LoanCalculator() {
       setPaymentSchedule(schedule);
       setTotalPaid(totalPaidValue);
       setTotalInterestPaid(totalInterestValue);
+
+      // Calcular o total pago por ano
+      calculateYearlyTotal(totalPaidValue, monthsLeftValue);
     }, 0);
+  };
+
+  // Função para calcular o total pago por ano
+  const calculateYearlyTotal = (totalPaidValue: number, monthsLeftValue: number) => {
+    const yearsLeft = Math.ceil(monthsLeftValue / 12); // Calcular os anos restantes
+    const yearlyTotal = totalPaidValue / yearsLeft;
+    setTotalPaidYearly(yearlyTotal);
   };
 
   return (
@@ -118,15 +140,21 @@ export function LoanCalculator() {
       <Typography variant="h4" component="h1" gutterBottom align="center">
         Calculadora de Empréstimo
       </Typography>
+      <Typography component="p" color='primary' gutterBottom align="center" paddingBottom={2}>
+        Fixas (Tabela Price)
+      </Typography>
+
       <LoanForm
         loanAmount={loanAmount}
         monthlyPayment={monthlyPayment}
         monthsLeft={monthsLeft}
         interestRate={interestRate}
+        interestRateType={interestRateType}
         onLoanAmountChange={setLoanAmount}
         onMonthlyPaymentChange={setMonthlyPayment}
         onMonthsLeftChange={setMonthsLeft}
         onInterestRateChange={setInterestRate}
+        onInterestRateTypeChange={setInterestRateType}
         onCalculate={calculateLoan}
         errors={errors}
       />
@@ -144,13 +172,14 @@ export function LoanCalculator() {
               <strong>Total pago:</strong> R$ {totalPaid.toFixed(2)}
             </Typography>
 
-            <Typography variant="body1" color="danger" sx={{ mt: 1 }}>
+            <Typography variant="body1" color="error" sx={{ mt: 1 }}>
               <strong>Total de juros pagos:</strong> R$ {totalInterestPaid.toFixed(2)}
             </Typography>
+
+
           </CardContent>
         </Card>
       )}
-
     </Container>
   );
 }
